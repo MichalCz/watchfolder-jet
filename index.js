@@ -33,7 +33,7 @@ class WatchFolderStream extends DataStream {
         );
     }
 
-    stop() {
+    close() {
         this[SFW].close();
     }
 }

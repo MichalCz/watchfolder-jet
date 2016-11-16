@@ -3,14 +3,31 @@ const fs = require("fs");
 const fsp = require("fs-promise");
 const os = require("os");
 const path = require("path");
+const assert = require("assert");
+const EventEmitter = require("events").EventEmitter;
 
 let theFolder;
 let jet;
+let lookup;
+
+let fooName;
+let barName;
+let bazName;
+let quxName;
 
 const cleanup = () => {
-    console.log("cleanup");
-    return fsp.remove(theFolder);
+    try {
+        jet.close();
+    } finally {
+        console.log("cleanup");
+        return fsp.remove(theFolder)
+            .catch((e) => {
+                console.error("cleanup error", e && e.stack || e);
+                process.exit(10);
+            });
+    }
 };
+
 const cbRes = (s,j) => (err, res) => {
     if (err)
         j(err);
@@ -21,49 +38,85 @@ const cbRes = (s,j) => (err, res) => {
 new Promise((s, j) => fs.mkdtemp(path.join(os.tmpdir(), "wfjet-test-"), cbRes(s, j)))
     .then(
         (folder) => {
-            console.log("z");
             theFolder = folder;
+
+            fooName = path.join(folder, "foo");
+            barName = path.join(folder, "bar");
+            bazName = path.join(folder, "baz");
+            quxName = path.join(folder, "qux");
+
             return Promise.all([
-                new Promise((s, j) => fs.writeFile(path.join(folder, "foo"), "123", null, cbRes(s, j))).then(
-                    () => console.log("a")
-                ),
-                new Promise((s, j) => fs.mkdir(path.join(folder, "bar"), cbRes(s, j))).then(
-                    () => console.log("b")
-                )
+                fsp.writeFile(fooName, "abc"),
+                fsp.mkdir(barName)
             ]);
         }
     ).then(
-        () => {
-            console.log("z");
-            return (jet = wfjet(theFolder))
+        () => new Promise((res, rej) => {
+            (jet = wfjet(theFolder))
                 .tee(
                     (stream) => stream
-                        .on("data", (entry) => console.log("Item: ", entry))
-                        .on("error", () => 0) // mute tee'd errors
+                        .reduceNow(
+                            (acc, entry) => ((acc[entry.filename] = acc[entry.filename] || []).push(entry.action), acc),
+                            lookup = new EventEmitter()
+                        )
+                        .on("error", (e) => console.log("reduce err", e))
                 )
-                .reduceNow(
-                    (acc, entry) => (acc[entry.filename] = entry.stats, acc.emit("entry", entry)),
-                    new EventEmitter()
-                );
-        }
-    ).then(
-        (stats) => new Promise((res, rej) => {
-            let i = 0;
-            acc.on("entry", (ent) => {
-                console.log("entry", ent.filename, i);
-                if (++i > 1) res();
-            });
-            acc.on("error", rej);
+                .pop(2, (items) => res(items));
+
+            setTimeout(rej.bind(null, "timeout"), 1000).unref();
         })
     ).then(
-        (stats) => new Promise((res, rej) => {
-            console.log(stats);
-        })
+        (stats) => Promise.all([
+            fsp.writeFile(fooName, {mode: "a"}, ""),
+            fsp.remove(barName),
+            fsp.writeFile(bazName, ""),
+            fsp.writeFile(quxName, "abc"),
+        ]).then(
+            () => new Promise((res) => setTimeout(res, 1000).unref())
+        )
     ).then(
         cleanup
+    ).then(
+        () => {
+            [fooName, barName, bazName, quxName].forEach(
+                (id) => {
+                    let last;
+                    lookup[id] = lookup[id].filter((i) => last !== (last = i));
+                }
+            );
+
+            console.log("foo", lookup[fooName]);
+            console.log("bar", lookup[barName]);
+            console.log("baz", lookup[bazName]);
+            console.log("qux", lookup[quxName]);
+
+            assert(lookup[fooName] instanceof Array);
+            assert(lookup[barName] instanceof Array);
+            assert(lookup[bazName] instanceof Array);
+            assert(lookup[quxName] instanceof Array);
+
+            assert.equal(lookup[fooName].length, 2);
+            assert.equal(lookup[barName].length, 2);
+            assert.equal(lookup[bazName].length, 1);
+            assert.equal(lookup[quxName].length, 2);
+
+            assert.equal(lookup[fooName][0], "add");
+            assert.equal(lookup[barName][0], "add");
+            assert.equal(lookup[fooName][1], "change");
+            assert.equal(lookup[barName][1], "remove");
+            assert.equal(lookup[bazName][0], "create");
+            assert.equal(lookup[quxName][0], "create");
+            assert.equal(lookup[quxName][1], "change");
+
+            return new Promise((res, rej) => {
+                setTimeout(() => rej("Process should terminate on it's own")).unref();
+            }, 100);
+        }
     ).catch(
         (e) => {
-            console.error(e && e.stack || e);
-            return cleanup;
+            console.error("error", e && e.stack || e);
+            return cleanup().then(
+                () => process.exit(11)
+            );
         }
     );
