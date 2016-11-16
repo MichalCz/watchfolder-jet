@@ -42,7 +42,7 @@ new Promise((s, j) => fs.mkdtemp(path.join(os.tmpdir(), "wfjet-test-"), cbRes(s,
                         .on("error", () => 0) // mute tee'd errors
                 )
                 .reduceNow(
-                    (acc, entry) => (acc[entry.filename] = entry.stats, acc.emit("entry")),
+                    (acc, entry) => (acc[entry.filename] = entry.stats, acc.emit("entry", entry)),
                     new EventEmitter()
                 );
         }
@@ -50,7 +50,7 @@ new Promise((s, j) => fs.mkdtemp(path.join(os.tmpdir(), "wfjet-test-"), cbRes(s,
         (stats) => new Promise((res, rej) => {
             let i = 0;
             acc.on("entry", (ent) => {
-                console.log("entry", ent.filename);
+                console.log("entry", ent.filename, i);
                 if (++i > 1) res();
             });
             acc.on("error", rej);
