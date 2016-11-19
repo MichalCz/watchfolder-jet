@@ -16,7 +16,7 @@
   "author": "Michał Czapracki <cz@signicode.com>",
   "license": "GPL-3.0",
   "peerDependencies": {
-    "scramjet": "~1"
+    "scramjet": ">1.4.2 <2"
   },
   "devDependencies": {
     "fs-promise": "^1.0.0"
