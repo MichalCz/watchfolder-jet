@@ -8,7 +8,7 @@ const EventEmitter = require("events").EventEmitter;
 
 let theFolder;
 let jet;
-let lookup;
+const lookup = new EventEmitter();
 
 let fooName;
 let barName;
@@ -48,16 +48,18 @@ new Promise((s, j) => fs.mkdtemp(path.join(os.tmpdir(), "wfjet-test-"), cbRes(s,
             return Promise.all([
                 fsp.writeFile(fooName, "abc"),
                 fsp.mkdir(barName)
-            ]);
+            ]).then(
+                () => folder
+            );
         }
     ).then(
-        () => new Promise((res, rej) => {
-            (jet = wfjet(theFolder))
+        (folder) => new Promise((res, rej) => {
+            (jet = wfjet(folder))
                 .tee(
                     (stream) => stream
                         .reduceNow(
                             (acc, entry) => ((acc[entry.filename] = acc[entry.filename] || []).push(entry.action), acc),
-                            lookup = new EventEmitter()
+                            lookup
                         )
                         .on("error", (e) => console.log("reduce err", e))
                 )

@@ -1,46 +1,15 @@
-const http = require("http");
-const querystring = require("querystring");
-const EventEmitter = require("events").EventEmitter;
-const sfw = require("simple-folder-watcher");
-const API_VERSION = 1;
+const WatchFolderStream = require('./lib/watchfolder-stream').WatchFolderStream;
+const FinishedFileStream = require('./lib/finished-file-stream').FinishedFileStream;
+const FinishedFile = require('./lib/finished-file-stream').FinishedFile;
 
-const getScramjetVersion = (scramjet) => {
-    if (!scramjet)
-        scramjet = require("scramjet");
-
-    if (!(scramjet = scramjet.API(API_VERSION)))
-        throw new Error("Scramjet API version " + API_VERSION + " required!");
-
-    return scramjet;
+module.exports = (folder) => {
+    return new WatchFolderStream(folder);
 };
-const DataStream = getScramjetVersion().DataStream;
-
-const SFW = Symbol("SFW");
-
-class WatchFolderStream extends DataStream {
-    constructor(folder) {
-        super();
-        const fld = this[SFW] = new sfw(folder);
-        ['add', 'create', 'remove', 'change'].forEach(
-            (action) => fld.on(action, (filename, stat, old) => {
-                this.write({
-                    action: action,
-                    filename: filename,
-                    stat: stat,
-                    prevstat: old
-                });
-            })
-        );
-    }
-
-    close() {
-        this[SFW].close();
-    }
-}
-
-module.exports = (folder, scramjet) => {
-    const stream = new WatchFolderStream(folder);
-    return stream;
+module.exports.watch = module.exports;
+module.exports.finished = (folder) => {
+    return new FinishedFileStream(folder);
 };
 
 module.exports.WatchFolderStream = WatchFolderStream;
+module.exports.FinishedFileStream = FinishedFileStream;
+module.exports.FinishedFile = FinishedFile;
