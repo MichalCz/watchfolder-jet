@@ -21,6 +21,15 @@ running.
         process.stdout
     );
 ```
+## API
+
+    require("watchfolder-jet").watch(directory);
+
+Watches a directrory for changes
+
+    require("watchfolder-jet").finished(directory, {/* options */ timeout: 10000});
+
+Watches a directory for completed files only.
 
 ## Stream objects
 
