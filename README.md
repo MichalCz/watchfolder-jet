@@ -44,7 +44,6 @@ The streamed objects have the following structure:
         prevstat: {}   // The previous stat (only on "change")
     }
 ```
-
 ## License and contributions
 
-At this moment Scramjet is released under the terms of GPL-3.
+The module is released under the condition of the MIT license. Please see the attached [LICENSE](license file).
