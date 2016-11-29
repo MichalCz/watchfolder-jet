@@ -1,6 +1,6 @@
 {
   "name": "watchfolder-jet",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A simple scramjet stream that streams lists of changed, added, removed files from the specified folder",
   "main": "index.js",
   "repository": {
