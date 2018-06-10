@@ -11,7 +11,7 @@
     "test": "node test/events"
   },
   "engines": {
-    "node": ">=6"
+    "node": ">=8"
   },
   "author": "Signicode / Michał Czapracki <cz@signicode.com>",
   "license": "MIT",
@@ -19,7 +19,7 @@
     "fs-promise": "^1.0.0"
   },
   "dependencies": {
-    "scramjet": "~2.0",
+    "scramjet": "^4.15.2",
     "simple-folder-watcher": "^0.3.0"
   }
 }
