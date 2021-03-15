@@ -19,7 +19,7 @@
     "fs-promise": "^2.0.3"
   },
   "dependencies": {
-    "scramjet": "^4.35.1",
+    "scramjet": "^4.35.13",
     "simple-folder-watcher": "^0.3.0"
   }
 }
